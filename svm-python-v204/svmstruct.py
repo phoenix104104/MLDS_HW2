@@ -13,6 +13,8 @@ def parse_parameters(sparm):
     If this function is not implemented, any custom command line
     arguments are ignored and sparm remains unchanged."""
     sparm.arbitrary_parameter = 'I am an arbitrary parameter!'
+    # record label number to generate psi
+    sparm.total_label_number = 48
 
 def parse_parameters_classify(attribute, value):
     """Process a single custom command line argument for the classifier.
@@ -40,8 +42,30 @@ def read_examples(filename, sparm):
     # problem for learning.  The correct hypothesis would obviously
     # tend to have a positive weight for the first feature, and a
     # negative weight for the 4th feature.
-    return [([1,1,0,0], 1), ([1,0,1,0], 1), ([0,1,0,1],-1),
-            ([0,0,1,1],-1), ([1,0,0,0], 1), ([0,0,0,1],-1)]
+
+    file = open(filename)
+
+    current = ''
+    example = []
+    frame = ([],[])
+
+    for line in file :
+        s = line.rstrip().split()
+        #split number
+        name = s[0][:-s[0][::-1].index('_')]
+
+        if current != name :
+            if sum([len(x) for x in frame]) > 0:
+                example.append(frame)
+                frame = ([],[])
+            current = name
+
+        frame[0].append(s[2:])
+        frame[1].append(int(s[1]))
+    return example
+
+    # return [([1,1,0,0], 1), ([1,0,1,0], 1), ([0,1,0,1],-1),
+    #         ([0,0,1,1],-1), ([1,0,0,0], 1), ([0,0,0,1],-1)]
 
 def init_model(sample, sm, sparm):
     """Initializes the learning model.
@@ -160,9 +184,50 @@ def psi(x, y, sm, sparm):
     # In the case of binary classification, psi is just the class (+1
     # or -1) times the feature vector for x, including that special
     # constant bias feature we pretend that we have.
+
+    assert len(x) > 0 and len(x) == len(y)
+    feature = {}
+    trans = {}
+    for i in range(len(x)) :
+        idx = y[i]
+        # merge feature with same label
+        if idx not in feature :
+            feature[idx] = x[i]
+        else :
+            feature[idx] = map(lambda (x, y): float(x) + float(y), zip(feature[idx], x[i])) 
+        
+        # transition count
+        if i > 0 :
+            prev = y[i-1]
+            if prev not in trans :
+                trans[prev] = {}
+            if idx not in trans[prev] :
+                trans[prev][idx] = 0.0
+            trans[prev][idx] += 1
+
+    total = sparm.total_label_number
+    dim = len(x[0])
+    thePsi = []
+
+    # feature No. 0 to 48*69-1
+    for idx in range(total) :
+        if idx not in feature :
+            f = [0.0]*dim
+        else :
+            f = feature[idx]
+        thePsi.extend(f)
+
+    # feature No. 48*69 to 48*69+48*48
+    for idx0 in range(total) :
+        for idx1 in range(total) :
+            if idx0 in trans and idx1 in trans[idx0] :
+                thePsi.append(trans[idx0][idx1])
+            else :
+                thePsi.append(0.0)
+
     import svmapi
-    thePsi = [0.5*y*i for i in x]
-    thePsi.append(0.5*y) # Pretend as though x had an 1 at the end.
+    # thePsi = [0.5*y*i for i in x]
+    # thePsi.append(0.5*y) # Pretend as though x had an 1 at the end.
     return svmapi.Sparse(thePsi)
 
 def loss(y, ybar, sparm):
