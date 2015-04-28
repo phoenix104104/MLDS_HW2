@@ -60,7 +60,7 @@ def read_examples(filename, sparm):
                 frame = ([],[])
             current = name
 
-        frame[0].append(s[2:])
+        frame[0].append([float(x) for x in s[2:]])
         frame[1].append(int(s[1]))
     return example
 
@@ -194,7 +194,7 @@ def psi(x, y, sm, sparm):
         if idx not in feature :
             feature[idx] = x[i]
         else :
-            feature[idx] = map(lambda (x, y): float(x) + float(y), zip(feature[idx], x[i])) 
+            feature[idx] = map(lambda (x, y): x+y, zip(feature[idx], x[i])) 
         
         # transition count
         if i > 0 :
