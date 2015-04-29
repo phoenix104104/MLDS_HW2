@@ -79,7 +79,7 @@ def init_model(sample, sm, sparm):
     # weight corresponding to each feature.  We also add one to allow
     # for a last "bias" feature.
     #sm.size_psi = len(sample[0][0])+1
-    sm.size_psi = sparm.total_label_number * len(sample[0][0][0]) + pow(sparm.total_label_number, 2) + 1
+    sm.size_psi = sparm.total_label_number * len(sample[0][0][0]) + pow(sparm.total_label_number, 2)
 
 def init_constraints(sample, sm, sparm):
     """Initializes special constraints.
