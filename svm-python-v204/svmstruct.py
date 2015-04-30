@@ -136,7 +136,9 @@ def classify_example(x, sm, sparm):
     # Believe it or not, this is a dot product.  The last element of
     # sm.w is assumed to be the weight associated with the bias
     # feature as explained earlier.
-    return sum([i*j for i,j in zip(x,sm.w[:-1])]) + sm.w[-1]
+    # TODO
+    #return sum([i*j for i,j in zip(x,sm.w[:-1])]) + sm.w[-1]
+    return None
 
 def find_most_violated_constraint(x, y, sm, sparm):
     """Return ybar associated with x's most violated constraint.
@@ -154,10 +156,12 @@ def find_most_violated_constraint(x, y, sm, sparm):
     loss into account at all, but it isn't always a terrible
     approximation.  One still technically maintains the empirical
     risk bound condition, but without any regularization."""
-    score = classify_example(x,sm,sparm)
-    discy, discny = y*score, -y*score + 1
-    if discy > discny: return y
-    return -y
+    #score = classify_example(x,sm,sparm)
+    #discy, discny = y*score, -y*score + 1
+    #if discy > discny: return y
+    #return -y
+    # TODO
+    return None
 
 def find_most_violated_constraint_slack(x, y, sm, sparm):
     """Return ybar associated with x's most violated constraint.
@@ -244,8 +248,13 @@ def loss(y, ybar, sparm):
     The default behavior is to perform 0/1 loss based on the truth of
     y==ybar."""
     # If they're the same sign, then the loss should be 0.
-    if y*ybar > 0: return 0
-    return 1
+    #if y*ybar > 0: return 0
+    #return 1
+    cost = 0
+    for i,j in zip(y,ybar):
+        if(i!=j):
+            cost += 1
+    return cost
 
 def print_iteration_stats(ceps, cached_constraint, sample, sm,
                           cset, alpha, sparm):
