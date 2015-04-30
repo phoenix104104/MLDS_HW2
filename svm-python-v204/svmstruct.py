@@ -51,7 +51,10 @@ def read_examples(filename, sparm):
 
     for line in file :
         s = line.rstrip().split()
-        #split number
+        # align test file format with train file's
+        if len(s) == 2 :
+            s.insert(1, 0)
+        # split number
         name = s[0][:-s[0][::-1].index('_')]
 
         if current != name :
