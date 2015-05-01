@@ -143,9 +143,52 @@ def classify_example(x, sm, sparm):
     # Believe it or not, this is a dot product.  The last element of
     # sm.w is assumed to be the weight associated with the bias
     # feature as explained earlier.
-    # TODO
     #return sum([i*j for i,j in zip(x,sm.w[:-1])]) + sm.w[-1]
-    return None
+    backtrace = []
+    costs = []
+    feature = x[0]
+    feature_length = len(feature)
+    trans_offset = feature_length*sparm.total_label_number
+    for i in range(0, sparm.total_label_number):
+        cost = 0
+        for a,b in zip(sm.w[(i*feature_length):((i+1)*feature_length)], feature):
+            cost += a*b
+        costs.append(cost)
+        backtrace.append(i)
+    for m in range(1, len(x)):
+        prev = costs
+        costs = []
+        prevTrace = backtrace
+        backtrace = []
+        feature = x[m]
+        for i in range(0,sparm.total_label_number):
+            maxVal = -float('Inf')
+            maxIdx = 0
+            for j in range(0,sparm.total_label_number):
+                cost = sm.w[j*sparm.total_label_number+i+trans_offset] + prev[j] # j to i
+                if(cost > maxVal):
+                    maxVal = cost
+                    maxIdx = j
+            for a,b in zip(sm.w[(i*feature_length):((i+1)*feature_length)], feature):
+                maxVal += a*b
+            costs.append(maxVal)
+            backtrace.append((prevTrace[maxIdx], i))
+    maxVal = -float('Inf')
+    maxIdx = 0
+    for i in range(0,sparm.total_label_number): 
+        if(costs[i] > maxVal):
+            maxVal = costs[i]
+            maxIdx = i
+    y = []
+    tup = backtrace[maxIdx]
+    while(not isinstance(tup, int)):
+        y.append(tup[1])
+        tup = tup[0]
+    y.append(tup)
+    y.reverse()
+    return y
+
+
 
 def find_most_violated_constraint(x, y, sm, sparm):
     """Return ybar associated with x's most violated constraint.
@@ -168,7 +211,54 @@ def find_most_violated_constraint(x, y, sm, sparm):
     #if discy > discny: return y
     #return -y
     # TODO
-    return None
+    backtrace = []
+    costs = []
+    feature = x[0]
+    feature_length = len(feature)
+    trans_offset = feature_length*sparm.total_label_number
+    for i in range(0, sparm.total_label_number):
+        cost = 1
+        for a,b in zip(sm.w[(i*feature_length):((i+1)*feature_length)], feature):
+            cost += a*b
+        costs.append(cost)
+        backtrace.append(i)
+    costs[y[0]] -= 1
+
+    for m in range(1, len(x)):
+        prev = costs
+        costs = []
+        prevTrace = backtrace
+        backtrace = []
+        feature = x[m]
+        for i in range(0,sparm.total_label_number):
+            maxVal = -float('Inf')
+            maxIdx = 0
+            for j in range(0,sparm.total_label_number):
+                cost = sm.w[j*sparm.total_label_number+i+trans_offset] + prev[j] # j to i
+                if(cost > maxVal):
+                    maxVal = cost
+                    maxIdx = j
+            for a,b in zip(sm.w[(i*feature_length):((i+1)*feature_length)], feature):
+                maxVal += a*b
+            if(y[m]!=i):
+                maxVal += 1
+            costs.append(maxVal)
+            backtrace.append((prevTrace[maxIdx], i))
+    maxVal = -float('Inf')
+    maxIdx = 0
+    for i in range(0,sparm.total_label_number): 
+        if(costs[i] > maxVal):
+            maxVal = costs[i]
+            maxIdx = i
+    ybar = []
+    tup = backtrace[maxIdx]
+    while(not isinstance(tup, int)):
+        ybar.append(tup[1])
+        tup = tup[0]
+    ybar.append(tup)
+    ybar.reverse()
+    return ybar
+
 
 def find_most_violated_constraint_slack(x, y, sm, sparm):
     """Return ybar associated with x's most violated constraint.
