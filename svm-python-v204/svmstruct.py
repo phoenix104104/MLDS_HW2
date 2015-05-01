@@ -445,7 +445,12 @@ def write_label(fileptr, y):
     object is a file, not a string.  Attempts to close the file are
     ignored.)  The default behavior is equivalent to
     'print>>fileptr,y'"""
-    print>>fileptr,y
+    #print>>fileptr,y
+    fileptr.write(str(y[0]))
+    for i in rang(1,len(y)):
+        fileptr.write(" ")
+        fileptr.write(str(y[i])
+    fileptr.write("\n")
 
 def print_help():
     """Help printed for badly formed CL-arguments when learning.
