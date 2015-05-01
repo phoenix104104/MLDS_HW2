@@ -64,9 +64,9 @@ def read_examples(filename, sparm):
             current = name
 
         frame[0].append([float(x) for x in s[2:]])
-        frame[1].append(int(s[1])
+        frame[1].append(int(s[1]))
 
-    if sum([len(x) for x in frame]) > 0:
+    if sum([len(x) for x in frame]) > 0 :
         example.append(frame)
 
     return example
@@ -449,7 +449,7 @@ def write_label(fileptr, y):
     fileptr.write(str(y[0]))
     for i in rang(1,len(y)):
         fileptr.write(" ")
-        fileptr.write(str(y[i])
+        fileptr.write(str(y[i]))
     fileptr.write("\n")
 
 def print_help():
