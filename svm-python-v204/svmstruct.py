@@ -51,9 +51,9 @@ def read_examples(filename, sparm):
 
     for line in file :
         s = line.rstrip().split()
-        # align test file format with train file's
-        if len(s) == 2 :
-            s.insert(1, 0)
+        # training file format: frame_name label [feature]
+        #  testing file format: frame_name 0 [feature]
+
         # split number
         name = s[0][:-s[0][::-1].index('_')]
 
@@ -64,7 +64,11 @@ def read_examples(filename, sparm):
             current = name
 
         frame[0].append([float(x) for x in s[2:]])
-        frame[1].append(int(s[1]))
+        frame[1].append(int(s[1])
+
+    if sum([len(x) for x in frame]) > 0:
+        example.append(frame)
+
     return example
 
     # return [([1,1,0,0], 1), ([1,0,1,0], 1), ([0,1,0,1],-1),

@@ -20,25 +20,42 @@ file.close()
 
 all_label = sorted(all_label, key=itemgetter(0,1))
 
-f_fbank = open(path+'fbank/train.ark')
-f_mfcc = open(path+'mfcc/train.ark')
-
 if not os.path.exists(path+'feature') :
 	os.makedirs(path+'feature')
 
-o_fbank = open(path+'feature/train.fbank', 'w+')
-o_mfcc = open(path+'feature/train.mfcc', 'w+')
+for feature_type in ['fbank', 'mfcc'] :
+	
+	ipath = path+'%s/train.ark' %feature_type
+	opath = path+'feature/train.%s' %feature_type
+	if os.path.exists(opath) :
+		print 'skip file %s, already exists' %opath
+		continue
 
-for label in all_label :
-	filename = label[0] + '_' + str(label[1])
-	index = str(label[2])
+	ifile = open(ipath)
+	ofile = open(opath, 'w+')
 
-	line = f_fbank.readline().split(None, 1)
-	assert filename == line[0]
-	line.insert(1, index)
-	o_fbank.write(' '.join(line))
+	for label in all_label :
+		filename = label[0] + '_' + str(label[1])
+		index = str(label[2])
 
-	line = f_mfcc.readline().split(None, 1)
-	assert filename == line[0]
-	line.insert(1, index)
-	o_mfcc.write(' '.join(line))
+		line = ifile.readline().split(None, 1)
+		assert filename == line[0]
+		line.insert(1, index)
+		ofile.write(' '.join(line))
+
+
+for feature_type in ['fbank', 'mfcc'] :
+	
+	ipath = path+'%s/test.ark' %feature_type
+	opath = path+'feature/test.%s' %feature_type
+	if os.path.exists(opath) :
+		print 'skip file %s, already exists' %opath
+		continue
+
+	ifile = open(ipath)
+	ofile = open(opath, 'w+')
+
+	for line in ifile :
+		s = line.split(None, 1)
+		s.insert(1, '0')
+		ofile.write(' '.join(s))
