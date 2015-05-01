@@ -1,92 +1,52 @@
-import os
-import csv
+import sys, argparse, os
+from mapping import *
+from util import save_csv, UTTERANCE
 
-def save_label(output_filename, utterance_all):
 
-    # save csv file
-    csv_data = []
-    for utterance in utterance_all:
-        csv_data.append([utterance.name, utterance.phones])
+if __name__ == "__main__":
     
-    with open(output_filename, 'w+') as file:
-        print "Save %s" %output_filename
-        writer = csv.writer(file)
-        writer.writerow(["id", "phone_sequence"])
-        for row in csv_data:
-            writer.writerow(row)
+    ''' 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u' , dest='utterance_filename', required=True, help='Utterance file path')
+    parser.add_argument('-y' , dest='predict_filename'  , required=True, help='Predicted label file path')
+    parser.add_argument('-o' , dest='output_filename'   , required=True, help='Output filename')
+    opts = parser.parse_args(sys.argv[1:])  
+    '''
+    
+    sil_id = 37
+    sil = 'L'
+
+    utterance_filename = '../../feature/train.fbank.uname'
+    predict_filename = '../../feature/train.fbank.idx_label'
+    output_filename = 'test.csv'
 
 
-
-class UTTERANCE:
-    def __init__(self):
-        self.name       = ""    # audio filename
-        self.id_list    = []    # frame id
-        self.phone_list = []    # frame phone
-        self.phones     = ''    # merged phone
-
-sil_id = 37
-sil = 'L'
-
-map_filename = '../../48_idx_chr.map_b'
-map_id_to_39 = {}
-with open(map_filename, 'r') as f:
-    print "Load %s..." %map_filename
-    for line in f.readlines():
-        s = line.rstrip().split()
-        phone_48 = s[0]
-        phone_id = int(s[1])
-        phone_39 = s[2]
-        map_id_to_39[phone_id] = phone_39
-
-
-data_dir = '../../feature'
-dataname = 'train.fbank.label'
-
-filename = os.path.join(data_dir, dataname)
-utterance_all = []
-current_name = ""
-with open(filename, 'r') as f:
-    print "Load %s..." %filename
-    for line in f.readlines():
-        s = line.rstrip().split()
-        names = s[0].split('_')
-        name = names[0] + '_' + names[1]
-        id = int(s[1])
-        if( name != current_name ):
+    utterance_all = []
+    with open(utterance_filename, 'r') as f:
+        print "Load %s..." %utterance_filename
+        for line in f.readlines():
             utterance = UTTERANCE()
-            utterance.name = name
-            current_name = name
+            utterance.name = line.rstrip()
             utterance_all.append(utterance)
-
-        utterance.id_list.append(id)
-        utterance.phone_list.append(map_id_to_39[id])
+    
+    predict_all = []        
+    with open(predict_filename, 'r') as f:
+        print "Load %s..." %predict_filename
+        lines = f.readlines()
+        n_line = len(lines)
+        for i in range(n_line):
+            utterance = utterance_all[i]
+            id_list = lines[i].rstrip().split()
+            utterance.phone_list = [dict_idx48_to_chr[int(id)] for id in id_list ]
+    
+    data = [] 
+    for utterance in utterance_all:
+        utterance.trimming()
+        data.append([utterance.name, utterance.phone_sequence])
         
-
-
-for utterance in utterance_all:
-    phone_curr = ''
     
-    phones_trim = ""
-    # trimming
-    for phone in utterance.phone_list:
-        if phone != phone_curr:
-            phone_curr = phone
-            phones_trim += phone
-    
-    # eliminate sil at the beginning and the end
-    st = 0
-    ed = len(phones_trim)
-    if( phones_trim[0] == sil ):
-        st = 1
-    if( phones_trim[-1] == sil ):
-        ed -= 1
-    
-    utterance.phones = phones_trim[st:ed]
-    #print '%s: %s' %(utterance.name, utterance.phones)
-
-output_filename = 'test.pred'
-save_label(output_filename, utterance_all)
-
+    header = ["id", "phone_sequence"]
+    save_csv(output_filename, header, data)  
 
 
 
