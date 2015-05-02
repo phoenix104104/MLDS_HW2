@@ -170,6 +170,13 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
 
   fclose(file);
   
+  int max_num_frame = 0;
+  for(i=0 ; i<n ; i++) {
+    if(frame_num_list[i] > max_num_frame) {
+      max_num_frame = frame_num_list[i];
+    }
+  }
+  printf("max_num_frame = %d\n", max_num_frame);
   // debug
   /*
   for(i=n-1 ; i<n ; i++) {
@@ -449,6 +456,12 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
 void        write_label(FILE *fp, LABEL y)
 {
   /* Writes label y to file handle fp. */
+  int i;
+  fprintf(fp, "%s", y.filename);
+  for(i=0 ; i<y.frame_num ; i++) {
+    fprintf(fp, " %d", y.y[i]);
+  }
+  fprintf(fp, "\n");
 } 
 
 void        free_pattern(PATTERN pattern) {
