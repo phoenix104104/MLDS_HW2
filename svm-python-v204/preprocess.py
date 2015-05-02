@@ -3,6 +3,7 @@ from operator import itemgetter
 
 path = '../../'
 
+
 label_list = []
 file = open(path+'48_idx_chr.map_b')
 for line in file:
@@ -59,3 +60,4 @@ for feature_type in ['fbank', 'mfcc'] :
 		s = line.split(None, 1)
 		s.insert(1, '0')
 		ofile.write(' '.join(s))
+
