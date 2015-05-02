@@ -22,6 +22,28 @@
 #include "svm_struct/svm_struct_common.h"
 #include "svm_struct_api.h"
 
+int strsplit(char** array, char* str, const char* del) {
+  int len = 0;
+  char *s = strtok(str, del);
+  while( s != NULL ) {
+    array[len] = s;
+    s = strtok(NULL, del);
+    len++;
+  }
+  return len;
+}
+
+void extract_filename(char* filename, char* input_string) {
+
+  char** filename_buffer = (char**)malloc(sizeof(char*)*3);
+  strsplit(filename_buffer, input_string, "_");
+  memset(filename, 0, strlen(filename));
+  strcpy(filename, filename_buffer[0]);
+  strcat(filename, "_");
+  strcat(filename, filename_buffer[1]);
+
+}
+
 void        svm_struct_learn_api_init(int argc, char* argv[])
 {
   /* Called in learning part before anything else is done to allow
@@ -46,7 +68,7 @@ void        svm_struct_classify_api_exit()
      that might be necessary. */
 }
 
-SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
+SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
 {
   /* Reads struct examples and returns them in sample. The number of
      examples must be written into sample.n */
@@ -54,10 +76,130 @@ SAMPLE      read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm)
   EXAMPLE  *examples;
   long     n;       /* number of examples */
 
-  n=100; /* replace by appropriate number of examples */
-  examples=(EXAMPLE *)my_malloc(sizeof(EXAMPLE)*n);
+  printf("\n");
 
-  /* fill in your code here */
+  int max_feature_dim = 2000;
+  int max_example_num = 5000;
+
+  FILE* file;
+
+  int buffer_len = 1000;
+  char* buffer = (char*)malloc(sizeof(char)*buffer_len);
+
+  char** line = (char**)malloc(sizeof(char*)*(max_feature_dim+2));
+  char** filename_list = (char**)malloc(sizeof(char*)*max_example_num);
+  int*   frame_num_list = (int*)malloc(sizeof(int)*max_example_num);
+  char*  filename = (char*)malloc(sizeof(char)*50);
+  char*  filename_current = (char*)malloc(sizeof(char)*50);
+  int n_element   = 0;  // number of element in one line
+  int n_frame     = 0;  // number of frame in one example
+  int feature_dim = 0;  // input feature dimension
+  int i, j, k;
+
+
+  // first parse (get n, frame_num, feature_dim)
+  printf("First parsing...\n");
+  file = fopen(input_filename, "r");
+  n = 0;
+  while( getline(&buffer, &buffer_len, file) != -1 ) {
+    n_element = strsplit(line, buffer, " ");
+    feature_dim = n_element - 2;
+  
+    extract_filename(filename, line[0]);
+    if( strcmp(filename, filename_current) != 0 ) {
+      memset(filename_current, 0, strlen(filename_current));
+      strcpy(filename_current, filename);
+
+      filename_list[n] = (char*)malloc(sizeof(char)*strlen(filename));
+      strcpy(filename_list[n], filename);
+      if( n > 0 ) {
+        frame_num_list[n-1] = n_frame;
+      }
+      n += 1;
+      n_frame = 0;
+    }
+    n_frame++;
+  }  
+  frame_num_list[n-1] = n_frame;      
+
+  printf("input feature dimension = %d\n", feature_dim);
+  printf("number of example = %d\n", n);
+  examples=(EXAMPLE *)my_malloc(sizeof(EXAMPLE)*n);
+  sparm->feature_dim = feature_dim;
+  
+//  for(i=0 ; i<n ; i++) {
+//    printf("%s\tn_frame = %d\n", filename_list[i], frame_num_list[i]);
+// }
+  
+  // second parse (allocate pattern and label)
+  printf("Second parsing...\n");
+  fseek(file, 0, SEEK_SET); // reset file pointer to the beginning of file
+  memset(filename_current, 0, strlen(filename_current));
+  i = -1; // counter of example
+  while( getline(&buffer, &buffer_len, file) != -1 ) {
+    n_element = strsplit(line, buffer, " ");
+    extract_filename(filename, line[0]);
+
+    if( strcmp(filename, filename_current) != 0 ) {
+      i += 1;
+      memset(filename_current, 0, strlen(filename_current));
+      strcpy(filename_current, filename);
+      
+      examples[i].x.x = (double**)my_malloc(sizeof(double*)*frame_num_list[i]);
+      for(j=0 ; j<frame_num_list[i] ; j++) {
+        examples[i].x.x[j] = (double*)my_malloc(sizeof(double)*feature_dim);
+      }
+
+      examples[i].y.y = (int*)my_malloc(sizeof(int)*frame_num_list[i]);
+      examples[i].x.filename = (char*)my_malloc(sizeof(char)*strlen(filename_list[i]));
+      strcpy(examples[i].x.filename, filename_list[i]);
+      examples[i].y.filename = examples[i].x.filename;
+
+      examples[i].x.frame_num = frame_num_list[i];
+      examples[i].y.frame_num = frame_num_list[i];
+
+      j = 0; // counter of frame
+    }
+    
+    examples[i].y.y[j] = atoi(line[1]);
+    for(k=2 ; k<n_element; k++) {
+        examples[i].x.x[j][k-2] = atof(line[k]);
+    }
+    j++;    
+  }  
+
+  fclose(file);
+  
+  // debug
+  /*
+  for(i=n-1 ; i<n ; i++) {
+    printf("x.filename = %s, x.frame_num = %d\n", examples[i].x.filename, examples[i].x.frame_num);
+    
+    for(j=examples[i].x.frame_num-1 ; j<examples[i].x.frame_num ; j++) {
+      for(k=0 ; k<feature_dim ; k++) {
+        printf("x[%d][%d] = %.8f\n", j, k, examples[i].x.x[j][k]);
+      }
+    }
+    
+
+    printf("y.filename = %s, y.frame_num = %d\n", examples[i].y.filename, examples[i].y.frame_num);
+    for(j=0 ; j<examples[i].y.frame_num ; j++) {
+      printf("%d ", examples[i].y.y[j]);
+    }
+    printf("\n");
+  }
+  */
+  
+  // release memory
+  free(buffer);
+  free(line);
+  for(i=0 ; i<max_example_num ; i++) {
+    free(filename_list[i]);
+  }
+  free(filename_list);
+  free(frame_num_list);
+  free(filename);
+  free(filename_current);
 
   sample.n=n;
   sample.examples=examples;
@@ -312,16 +454,22 @@ void        write_label(FILE *fp, LABEL y)
 void        free_pattern(PATTERN pattern) {
   /* Frees the memory of x. */
   int i;
-  for(i=0 ; i<pattern.frame_num ; i++) {
-    free(pattern.x[i]);
+  if( pattern.frame_num > 0 ) {
+    for(i=0 ; i<pattern.frame_num ; i++) {
+      free(pattern.x[i]);
+    }
+    free(pattern.x);
   }
-  free(pattern.x);
-  free(pattern.filename);
+  if( pattern.filename ) {
+    free(pattern.filename);
+  }
 }
 
 void        free_label(LABEL label) {
   /* Frees the memory of y. */
-  free(label.y);
+  if( label.frame_num > 0 ) {
+    free(label.y);
+  }
 }
 
 void        free_struct_model(STRUCTMODEL sm) 
