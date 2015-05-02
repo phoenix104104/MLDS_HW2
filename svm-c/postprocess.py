@@ -16,29 +16,22 @@ if __name__ == "__main__":
     sil_id = 37
     sil = 'L'
 
-    utterance_filename = '../../feature/train.fbank.uname'
-    predict_filename = '../../feature/train.fbank.idx_label'
-    output_filename = 'test.csv'
+    predict_filename = '../../feature/train.fbank.label'
+    output_filename = 'train_output.csv'
 
-
-    utterance_all = []
-    with open(utterance_filename, 'r') as f:
-        print "Load %s..." %utterance_filename
-        for line in f.readlines():
-            utterance = UTTERANCE()
-            utterance.name = line.rstrip()
-            utterance_all.append(utterance)
     
-    predict_all = []        
+    utterance_all = []        
     with open(predict_filename, 'r') as f:
         print "Load %s..." %predict_filename
-        lines = f.readlines()
-        n_line = len(lines)
-        for i in range(n_line):
-            utterance = utterance_all[i]
-            id_list = lines[i].rstrip().split()
+        for line in f.readlines():
+            id_list = line.rstrip().split()
+            name = id_list[0]
+            id_list = id_list[1:]
+            utterance = UTTERANCE()
+            utterance.name = name;
             utterance.phone_list = [dict_idx48_to_chr[int(id)] for id in id_list ]
-    
+            utterance_all.append(utterance)
+
     data = [] 
     for utterance in utterance_all:
         utterance.trimming()
