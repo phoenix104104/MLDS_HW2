@@ -22,6 +22,11 @@
 #include "svm_struct/svm_struct_common.h"
 #include "svm_struct_api.h"
 
+// memory block used in Viterbi ( classify_example(), find_most_violated )
+static double* viterbi_val_block = NULL;
+static int* viterbi_prev_block = NULL;
+static int viterbi_block_size = 0;
+
 int strsplit(char** array, char* str, const char* del) {
   int len = 0;
   char *s = strtok(str, del);
@@ -275,11 +280,89 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
      by psi() and range from index 1 to index sm->sizePsi. If the
      function cannot find a label, it shall return an empty label as
      recognized by the function empty_label(y). */
-  LABEL y;
+  LABEL ybar;
 
   /* insert your code for computing the predicted label y here */
+  // TODO
+  ybar.y = my_malloc(sizeof(int) * x.frame_num);
+  ybar.filename = x.filename;
+  ybar.frame_num = x.frame_num;
 
-  return(y);
+  if(viterbi_val_block == NULL) {
+    viterbi_block_size = 1000 * sparm->label_num;
+    viterbi_val_block = my_malloc(sizeof(double) * viterbi_block_size);
+    viterbi_prev_block = my_malloc(sizeof(int) * viterbi_block_size);
+  }
+
+  if(viterbi_block_size < (x.frame_num * sparm->label_num)) {
+    free(viterbi_val_block);
+    free(viterbi_prev_block);
+    while(viterbi_block_size < (x.frame_num * sparm->label_num)) {
+      viterbi_block_size = viterbi_block_size * 2;
+    }
+    viterbi_val_block = my_malloc(sizeof(double) * viterbi_block_size);
+    viterbi_prev_block = my_malloc(sizeof(int) * viterbi_block_size); 
+  }
+
+  int w_offset = 1;
+  int w_trans_offset = w_offset + sparm->feature_dim * sparm->label_num;
+
+  // first frame
+  int i = 0,j = 0,m = 0;
+
+  for(i = 0; i < sparm->label_num; i++) {
+    viterbi_val_block[i] = 0;
+    viterbi_prev_block[i] = -1;  // no prev for first frame
+    int offset = i * sparm->feature_dim + w_offset;
+    for(j = 0; j < sparm->feature_dim; j++) {
+      viterbi_val_block[i] += sm->w[offset+j] * x.x[0][j];
+    }
+  }
+
+  // forward
+  for(m = 1; m < x.frame_num; m++) {
+    int viterbi_prev_offset = (m - 1) * sparm->label_num;
+    int viterbi_offset = m * sparm->label_num;
+    for(j = 0; j < sparm->label_num; j++) {
+      // transition from 0 to j
+      double max = viterbi_val_block[viterbi_prev_offset] + sm->w[w_trans_offset+j];
+      int maxIdx = 0;
+      for(i = 1; i < sparm->label_num; i++) {
+        // transition from i to j
+        double temp = viterbi_val_block[viterbi_prev_offset+i]
+                        + sm->w[w_trans_offset + i * sparm->label_num + j];
+        if(temp > max) {
+          max = temp;
+          maxIdx = i;
+        }
+      }
+      // max found, add feature weights
+      int offset = j * sparm->feature_dim + w_offset;
+      for(i = 0; i < sparm->feature_dim; i++) {
+        max += sm->w[offset+i] * x.x[m][i];
+      }
+      viterbi_val_block[viterbi_offset+j] = max;
+      viterbi_prev_block[viterbi_offset+j] = maxIdx;
+    }
+  }
+
+  // backtrace
+  int viterbi_offset = (x.frame_num - 1) * sparm->label_num;
+  int maxIdx = 0;
+  double max = viterbi_val_block[viterbi_offset];
+  for(i = 1; i < sparm->label_num; i++) {
+    if( viterbi_val_block[viterbi_offset + i] > max ) {
+      max = viterbi_val_block[viterbi_offset + i];
+      maxIdx = i;
+    }
+  }
+
+  for(i = x.frame_num-1; i >= 0; i++) {
+    ybar.y[i] = maxIdx;
+    maxIdx = viterbi_prev_block[i * sparm->label_num + maxIdx];
+  }
+
+  return(ybar);
 }
 
 LABEL       find_most_violated_constraint_slackrescaling(PATTERN x, LABEL y, 
@@ -310,7 +393,8 @@ LABEL       find_most_violated_constraint_slackrescaling(PATTERN x, LABEL y,
   LABEL ybar;
 
   /* insert your code for computing the label ybar here */
-
+  // TODO...?
+  // 
   return(ybar);
 }
 
@@ -342,7 +426,7 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
   LABEL ybar;
 
   /* insert your code for computing the label ybar here */
-
+  // TODO
   return(ybar);
 }
 
@@ -381,6 +465,37 @@ SVECTOR     *psi(PATTERN x, LABEL y, STRUCTMODEL *sm,
   SVECTOR *fvec=NULL;
 
   /* insert code for computing the feature vector for x and y here */
+  // TODO
+  if(x.frame_num != y.frame_num) {
+    printf("ERROR: unequal frame_num in psi()\n");
+    exit(-1);
+  }
+  WORD* words = (WORD*) my_malloc(sizeof(WORD) * (sm->sizePsi + 1));
+  int i = 0, j = 0;
+  for(i = 0; i < sm->sizePsi; i++) {
+    words[i].wnum = i+1;
+    words[i].weight = 0;
+  }
+  words[sm->sizePsi].wnum = 0;
+  words[sm->sizePsi].weight = 0;
+
+  for(i = 0; i < x.frame_num; i++) {
+    int frame_label = y.y[i];
+    int offset = frame_label * sparm->feature_dim;
+    for(j = 0; j < sparm->feature_dim; j++) {
+      words[offset+j].weight += x.x[i][j];
+    }
+  }
+
+  int offset = sparm->label_num * sparm->feature_dim;
+  for(i = 1; i < x.frame_num; i++) {
+    int prev_label = y.y[i-1];
+    int this_label = y.y[i];
+    words[offset + prev_label * sparm->label_num + this_label].weight += 1;
+  }
+
+  // we already alloc words, use shallow copy
+  fvec = create_svector_shallow(words, NULL, 1.0);
 
   return(fvec);
 }
@@ -389,14 +504,28 @@ double      loss(LABEL y, LABEL ybar, STRUCT_LEARN_PARM *sparm)
 {
   /* loss for correct label y and predicted label ybar. The loss for
      y==ybar has to be zero. sparm->loss_function is set with the -l option. */
-  if(sparm->loss_function == 0) { /* type 0 loss: 0/1 loss */
-                                  /* return 0, if y==ybar. return 1 else */
-  }
-  else {
+  
+  //if(sparm->loss_function == 0) { /* type 0 loss: 0/1 loss */
+  //                                /* return 0, if y==ybar. return 1 else */
+  //}
+  //else {
     /* Put your code for different loss functions here. But then
        find_most_violated_constraint_???(x, y, sm) has to return the
        highest scoring label with the largest loss. */
+  //}
+  // TODO
+  if(y.frame_num != ybar.frame_num) {
+    printf("ERROR: unequal label length in loss()\n");
+    exit(-1);
   }
+  int i = 0;
+  double cost = 0;
+  for(i = 0; i < y.frame_num; i++) {
+    if(y.y[i] != ybar.y[i]) {
+      cost += 1;
+    }
+  }
+  return cost;
 }
 
 int         finalize_iteration(double ceps, int cached_constraint,
@@ -445,12 +574,14 @@ void        write_struct_model(char *file, STRUCTMODEL *sm,
 			       STRUCT_LEARN_PARM *sparm)
 {
   /* Writes structural model sm to file file. */
+  // TODO
 }
 
 STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
 {
   /* Reads structural model sm from file file. This function is used
      only in the prediction module, not in the learning module. */
+  // TODO
 }
 
 void        write_label(FILE *fp, LABEL y)
