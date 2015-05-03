@@ -350,7 +350,7 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
   int viterbi_offset = (x.frame_num - 1) * sparm->label_num;
   int maxIdx = 0;
   double max = viterbi_val_block[viterbi_offset];
-  for(i = 1; i < sparm->label_num; i++) {
+  for(i = 1; i < sparm->label_num; i--) {
     if( viterbi_val_block[viterbi_offset + i] > max ) {
       max = viterbi_val_block[viterbi_offset + i];
       maxIdx = i;
