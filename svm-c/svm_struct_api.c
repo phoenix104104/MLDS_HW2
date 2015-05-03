@@ -350,14 +350,14 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
   int viterbi_offset = (x.frame_num - 1) * sparm->label_num;
   int maxIdx = 0;
   double max = viterbi_val_block[viterbi_offset];
-  for(i = 1; i < sparm->label_num; i--) {
+  for(i = 1; i < sparm->label_num; i++) {
     if( viterbi_val_block[viterbi_offset + i] > max ) {
       max = viterbi_val_block[viterbi_offset + i];
       maxIdx = i;
     }
   }
 
-  for(i = x.frame_num-1; i >= 0; i++) {
+  for(i = x.frame_num-1; i >= 0; i--) {
     ybar.y[i] = maxIdx;
     maxIdx = viterbi_prev_block[i * sparm->label_num + maxIdx];
   }
@@ -425,8 +425,92 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
      empty_label(y). */
   LABEL ybar;
 
-  /* insert your code for computing the label ybar here */
+  /* insert your code for computing the predicted label y here */
   // TODO
+  ybar.y = my_malloc(sizeof(int) * x.frame_num);
+  ybar.filename = x.filename;
+  ybar.frame_num = x.frame_num;
+
+  if(viterbi_val_block == NULL) {
+    viterbi_block_size = 1000 * sparm->label_num;
+    viterbi_val_block = my_malloc(sizeof(double) * viterbi_block_size);
+    viterbi_prev_block = my_malloc(sizeof(int) * viterbi_block_size);
+  }
+
+  if(viterbi_block_size < (x.frame_num * sparm->label_num)) {
+    free(viterbi_val_block);
+    free(viterbi_prev_block);
+    while(viterbi_block_size < (x.frame_num * sparm->label_num)) {
+      viterbi_block_size = viterbi_block_size * 2;
+    }
+    viterbi_val_block = my_malloc(sizeof(double) * viterbi_block_size);
+    viterbi_prev_block = my_malloc(sizeof(int) * viterbi_block_size); 
+  }
+
+  int w_offset = 1;
+  int w_trans_offset = w_offset + sparm->feature_dim * sparm->label_num;
+
+  // first frame
+  int i = 0,j = 0,m = 0;
+
+  for(i = 0; i < sparm->label_num; i++) {
+    viterbi_val_block[i] = 0;
+    viterbi_prev_block[i] = -1;  // no prev for first frame
+    int offset = i * sparm->feature_dim + w_offset;
+    for(j = 0; j < sparm->feature_dim; j++) {
+      viterbi_val_block[i] += sm->w[offset+j] * x.x[0][j];
+    }
+    if(i != y.y[0]) {
+      viterbi_val_block[i] += 1;
+    }
+  }
+
+  // forward
+  for(m = 1; m < x.frame_num; m++) {
+    int viterbi_prev_offset = (m - 1) * sparm->label_num;
+    int viterbi_offset = m * sparm->label_num;
+    for(j = 0; j < sparm->label_num; j++) {
+      // transition from 0 to j
+      double max = viterbi_val_block[viterbi_prev_offset] + sm->w[w_trans_offset+j];
+      int maxIdx = 0;
+      for(i = 1; i < sparm->label_num; i++) {
+        // transition from i to j
+        double temp = viterbi_val_block[viterbi_prev_offset+i]
+                        + sm->w[w_trans_offset + i * sparm->label_num + j];
+        if(temp > max) {
+          max = temp;
+          maxIdx = i;
+        }
+      }
+      // max found, add feature weights
+      int offset = j * sparm->feature_dim + w_offset;
+      for(i = 0; i < sparm->feature_dim; i++) {
+        max += sm->w[offset+i] * x.x[m][i];
+      }
+      if(j != y.y[m]){
+        max += 1;
+      }
+      viterbi_val_block[viterbi_offset+j] = max;
+      viterbi_prev_block[viterbi_offset+j] = maxIdx;
+    }
+  }
+
+  // backtrace
+  int viterbi_offset = (x.frame_num - 1) * sparm->label_num;
+  int maxIdx = 0;
+  double max = viterbi_val_block[viterbi_offset];
+  for(i = 1; i < sparm->label_num; i++) {
+    if( viterbi_val_block[viterbi_offset + i] > max ) {
+      max = viterbi_val_block[viterbi_offset + i];
+      maxIdx = i;
+    }
+  }
+
+  for(i = x.frame_num-1; i >= 0; i--) {
+    ybar.y[i] = maxIdx;
+    maxIdx = viterbi_prev_block[i * sparm->label_num + maxIdx];
+  }
+
   return(ybar);
 }
 
