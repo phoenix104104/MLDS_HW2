@@ -659,6 +659,14 @@ void        write_struct_model(char *file, STRUCTMODEL *sm,
 {
   /* Writes structural model sm to file file. */
   // TODO
+  FILE* fp;
+  fp = fopen(file, "w");
+  int i = 0;
+  fprintf(fp, "%d\n", sm->sizePsi);
+  for(i = 0; i < sm->sizePsi+1; i++) {
+    fprintf(fp, "%f ", sm->w[i]);
+  }
+  fclose(fp);
 }
 
 STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
@@ -666,6 +674,22 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
   /* Reads structural model sm from file file. This function is used
      only in the prediction module, not in the learning module. */
   // TODO
+  FILE* fp;
+  STRUCTMODEL sm;
+
+  fp = fopen(file, "r");
+
+  fscanf(fp, "%d", &sm.sizePsi);
+
+  sm.w = my_malloc(sizeof(double)*(sm.sizePsi+1));
+
+  int i = 0;
+  for(i = 0;i < sm.sizePsi+1; i++) {
+    fscanf(fp, "%f", &sm.w[i]);
+  }
+  fclose(fp);
+  
+  return(sm);
 }
 
 void        write_label(FILE *fp, LABEL y)
