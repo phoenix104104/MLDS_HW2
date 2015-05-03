@@ -512,6 +512,13 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
     maxIdx = viterbi_prev_block[i * sparm->label_num + maxIdx];
   }
 
+  for(i = 0; i < x.frame_num; i++) {
+    if(ybar.y[i]<0 || ybar.y[i] >= sparm->label_num) {
+      printf("ERROR! You create a garbage ybar in find_most_violated_constraint\n");
+      exit(-1);
+    }
+  }
+
   return(ybar);
 }
 
