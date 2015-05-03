@@ -183,8 +183,9 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
   }
   printf("max_num_frame = %d\n", max_num_frame);
   // debug
-  /*
-  for(i=n-1 ; i<n ; i++) {
+  
+  for(i=0 ; i<3 ; i++) {
+    /*
     printf("x.filename = %s, x.frame_num = %d\n", examples[i].x.filename, examples[i].x.frame_num);
     
     for(j=examples[i].x.frame_num-1 ; j<examples[i].x.frame_num ; j++) {
@@ -192,15 +193,16 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
         printf("x[%d][%d] = %.8f\n", j, k, examples[i].x.x[j][k]);
       }
     }
-    
+    */
 
     printf("y.filename = %s, y.frame_num = %d\n", examples[i].y.filename, examples[i].y.frame_num);
     for(j=0 ; j<examples[i].y.frame_num ; j++) {
+
       printf("%d ", examples[i].y.y[j]);
     }
     printf("\n");
   }
-  */
+  
   
   // release memory
   free(buffer);
@@ -212,7 +214,6 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
   free(frame_num_list);
   free(filename);
   free(filename_current);
-
   sample.n=n;
   sample.examples=examples;
   return(sample);
