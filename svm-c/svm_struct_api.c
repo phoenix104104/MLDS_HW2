@@ -38,6 +38,16 @@ int strsplit(char** array, char* str, const char* del) {
   return len;
 }
 
+void check_y(LABEL y, int label_num) {
+  int i;
+  for(i = 0; i < y.frame_num; i++) {
+    if(y.y[i]<0 || y.y[i] >= label_num) {
+      printf("ERROR! y[%d] out of range\n", i);
+      exit(-1);
+    }
+  }
+}
+
 void extract_filename(char* filename, char* input_string) {
 
   char** filename_buffer = (char**)malloc(sizeof(char*)*3);
@@ -131,7 +141,7 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
   printf("number of example = %d\n", n);
   examples=(EXAMPLE *)my_malloc(sizeof(EXAMPLE)*n);
   sparm->feature_dim = feature_dim;
-  
+  sparm->label_num = 48; 
 //  for(i=0 ; i<n ; i++) {
 //    printf("%s\tn_frame = %d\n", filename_list[i], frame_num_list[i]);
 // }
@@ -183,9 +193,10 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
   }
   printf("max_num_frame = %d\n", max_num_frame);
   // debug
-  
+  /*
+  printf("debug...\n"); 
   for(i=0 ; i<3 ; i++) {
-    /*
+    
     printf("x.filename = %s, x.frame_num = %d\n", examples[i].x.filename, examples[i].x.frame_num);
     
     for(j=examples[i].x.frame_num-1 ; j<examples[i].x.frame_num ; j++) {
@@ -193,7 +204,7 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
         printf("x[%d][%d] = %.8f\n", j, k, examples[i].x.x[j][k]);
       }
     }
-    */
+    
 
     printf("y.filename = %s, y.frame_num = %d\n", examples[i].y.filename, examples[i].y.frame_num);
     for(j=0 ; j<examples[i].y.frame_num ; j++) {
@@ -201,7 +212,11 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
       printf("%d ", examples[i].y.y[j]);
     }
     printf("\n");
+    
+    
+    check_y(examples[i].y, sparm->label_num);
   }
+  */
   
   
   // release memory
@@ -362,7 +377,7 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
     ybar.y[i] = maxIdx;
     maxIdx = viterbi_prev_block[i * sparm->label_num + maxIdx];
   }
-
+  //check_y(ybar, sparm->label_num);
   return(ybar);
 }
 
@@ -512,12 +527,6 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
     maxIdx = viterbi_prev_block[i * sparm->label_num + maxIdx];
   }
 
-  for(i = 0; i < x.frame_num; i++) {
-    if(ybar.y[i]<0 || ybar.y[i] >= sparm->label_num) {
-      printf("ERROR! You create a garbage ybar in find_most_violated_constraint\n");
-      exit(-1);
-    }
-  }
 
   return(ybar);
 }
