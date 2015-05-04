@@ -681,7 +681,7 @@ void        write_struct_model(char *file, STRUCTMODEL *sm,
   int i = 0;
   fprintf(fp, "%d\n", sm->sizePsi);
   for(i = 0; i < sm->sizePsi+1; i++) {
-    fprintf(fp, "%f ", sm->w[i]);
+    fprintf(fp, "%lf ", sm->w[i]);
   }
   fclose(fp);
 }
