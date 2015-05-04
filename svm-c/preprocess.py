@@ -26,7 +26,6 @@ def normalize(lines) :
 	total = len(feature)
 
 	global mean, var
-	print mean, var
 	if mean == None or var == None :
 		x = [.0] * dim
 		x2 = [.0] * dim
@@ -54,65 +53,6 @@ all_label = sorted(all_label, key=itemgetter(0,1))
 if not os.path.exists(path+'feature') :
 	os.makedirs(path+'feature')
 
-<<<<<<< HEAD
-# train
-for feature_type in ['fbank3_512']:
-	
-	ipath = path+'%s/train.ark' %feature_type
-	opath = path+'feature/train.%s' %feature_type + '.norm'*args.n + '.add'*args.a
-#	if os.path.exists(opath) :
-#		print 'skip file %s, already exists' %opath
-#		continue
-
-	print "Load %s" %ipath
-	ifile = open(ipath)
-	ofile = open(opath, 'w+')
-
-	lines = [x.rstrip().split(None, 1) for x in ifile]
-	if args.n :
-		lines = normalize(lines)
-
-	if args.a :
-		lines = [line + ['1.0'] for line in lines]
-
-	assert len(all_label) == len(lines)
-	for label, line in zip(all_label, lines) :
-		filename = label[0] + '_' + str(label[1])
-		index = str(label[2])
-
-		assert filename == line[0]
-		line.insert(1, index)
-		ofile.write(' '.join(line)+'\n')
-
-	print "Save %s" %opath
-
-# test
-for feature_type in ['fbank3_512']:
-	
-	ipath = path+'%s/test.ark' %feature_type
-	opath = path+'feature/test.%s' %feature_type + '.norm'*args.n + '.add'*args.a
-	if os.path.exists(opath) :
-		print 'skip file %s, already exists' %opath
-		continue
-
-	print "Load %s" %ipath
-	ifile = open(ipath)
-	ofile = open(opath, 'w+')
-
-	lines = [x.rstrip().split(None, 1) for x in ifile]
-
-	if args.n :
-		lines = normalize(lines)
-
-	if args.a :
-		lines = [line + ['1.0'] for line in lines]
-
-	for line in lines :
-		line.insert(1, '0')
-		ofile.write(' '.join(line) + '\n')
-
-	print "Save %s" %opath
-=======
 for file_type in ['train', 'test'] :
 	for feature_type in ['fbank', 'mfcc'] if args.mfcc else ['fbank']:
 		
@@ -154,4 +94,3 @@ for file_type in ['train', 'test'] :
 			for line in lines :
 				line.insert(1, '0')
 				ofile.write(' '.join(line) + '\n')
->>>>>>> 28de67eb4958964d7f5e7d88197e5dff8aa5c3c4
