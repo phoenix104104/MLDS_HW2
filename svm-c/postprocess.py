@@ -1,3 +1,4 @@
+#!/usr/bin/python -u
 import sys, argparse, os
 from mapping import *
 from util import save_csv, UTTERANCE
@@ -5,19 +6,20 @@ from util import save_csv, UTTERANCE
 
 if __name__ == "__main__":
     
-    ''' 
+     
     parser = argparse.ArgumentParser()
-    parser.add_argument('-u' , dest='utterance_filename', required=True, help='Utterance file path')
-    parser.add_argument('-y' , dest='predict_filename'  , required=True, help='Predicted label file path')
+    parser.add_argument('-i' , dest='predict_filename'  , required=True, help='Predicted label file path')
     parser.add_argument('-o' , dest='output_filename'   , required=True, help='Output filename')
     opts = parser.parse_args(sys.argv[1:])  
-    '''
+    
     
     sil_id = 37
     sil = 'L'
 
-    predict_filename = '../../feature/train.fbank.label'
-    output_filename = 'train_output.csv'
+    #predict_filename = '../../feature/train.fbank.label'
+    #output_filename = 'train_output.csv'
+    predict_filename = opts.predict_filename
+    output_filename = opts.output_filename
 
     
     utterance_all = []        
