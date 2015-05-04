@@ -28,6 +28,11 @@ class UTTERANCE:
         
         self.phone_sequence = phone_sequence[st:ed]
 
+def extract_audio_name(string):
+    s = string.split('_')
+    person = s[0]
+    audio = s[1]
+    return person, audio
 
 def save_csv(output_filename, header, data):
 

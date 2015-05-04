@@ -1,11 +1,7 @@
 import numpy as np
 import random, os
+from util import extract_audio_name
 
-def extract_audio_name(string):
-    s = string.split('_')
-    person = s[0]
-    audio = s[1]
-    return person, audio
 
 
 
