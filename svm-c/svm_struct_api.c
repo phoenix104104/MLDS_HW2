@@ -702,7 +702,7 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
 
   int i = 0;
   for(i = 0;i < sm.sizePsi+1; i++) {
-    fscanf(fp, "%f", &sm.w[i]);
+    fscanf(fp, "%lf", &sm.w[i]);
   }
   fclose(fp);
   
