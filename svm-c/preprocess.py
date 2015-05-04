@@ -1,4 +1,4 @@
-import os
+import os, sys
 from operator import itemgetter
 import argparse
 
@@ -49,19 +49,19 @@ if not os.path.exists(path+'feature') :
 	os.makedirs(path+'feature')
 
 # train
-for feature_type in ['fbank', 'mfcc'] if args.mfcc else ['fbank']:
+for feature_type in ['fbank3_512']:
 	
 	ipath = path+'%s/train.ark' %feature_type
 	opath = path+'feature/train.%s' %feature_type + '.norm'*args.n + '.add'*args.a
-	if os.path.exists(opath) :
-		print 'skip file %s, already exists' %opath
-		continue
+#	if os.path.exists(opath) :
+#		print 'skip file %s, already exists' %opath
+#		continue
 
+	print "Load %s" %ipath
 	ifile = open(ipath)
 	ofile = open(opath, 'w+')
 
 	lines = [x.rstrip().split(None, 1) for x in ifile]
-
 	if args.n :
 		lines = normalize(lines)
 
@@ -77,8 +77,10 @@ for feature_type in ['fbank', 'mfcc'] if args.mfcc else ['fbank']:
 		line.insert(1, index)
 		ofile.write(' '.join(line)+'\n')
 
+	print "Save %s" %opath
+
 # test
-for feature_type in ['fbank', 'mfcc'] if args.mfcc else ['fbank']:
+for feature_type in ['fbank3_512']:
 	
 	ipath = path+'%s/test.ark' %feature_type
 	opath = path+'feature/test.%s' %feature_type + '.norm'*args.n + '.add'*args.a
@@ -86,6 +88,7 @@ for feature_type in ['fbank', 'mfcc'] if args.mfcc else ['fbank']:
 		print 'skip file %s, already exists' %opath
 		continue
 
+	print "Load %s" %ipath
 	ifile = open(ipath)
 	ofile = open(opath, 'w+')
 
@@ -100,3 +103,5 @@ for feature_type in ['fbank', 'mfcc'] if args.mfcc else ['fbank']:
 	for line in lines :
 		line.insert(1, '0')
 		ofile.write(' '.join(line) + '\n')
+
+	print "Save %s" %opath

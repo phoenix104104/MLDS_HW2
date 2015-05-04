@@ -98,7 +98,7 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
 
   FILE* file;
 
-  int buffer_len = 1000;
+  int buffer_len = 20000;
   char* buffer = (char*)malloc(sizeof(char)*buffer_len);
 
   char** line = (char**)malloc(sizeof(char*)*(max_feature_dim+2));
@@ -111,7 +111,7 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
   int feature_dim = 0;  // input feature dimension
   int i, j, k;
 
-
+  printf("Load %s\n", input_filename);
   // first parse (get n, frame_num, feature_dim)
   printf("First parsing...\n");
   file = fopen(input_filename, "r");
@@ -119,7 +119,6 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
   while( getline(&buffer, &buffer_len, file) != -1 ) {
     n_element = strsplit(line, buffer, " ");
     feature_dim = n_element - 2;
-  
     extract_filename(filename, line[0]);
     if( strcmp(filename, filename_current) != 0 ) {
       memset(filename_current, 0, strlen(filename_current));
