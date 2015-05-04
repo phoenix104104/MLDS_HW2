@@ -23,8 +23,10 @@ def split_label_line(line) :
 def normalize(lines) :
 	feature = [[float(i) for i in line[1].split()] for line in lines]
 	dim = len(feature[0])
+	total = len(feature)
 
 	global mean, var
+	print mean, var
 	if mean == None or var == None :
 		x = [.0] * dim
 		x2 = [.0] * dim
@@ -32,7 +34,6 @@ def normalize(lines) :
 			x = [x[i] + f[i] for i in range(dim)]
 			x2 = [x2[i] + pow(f[i],2) for i in range(dim)]
 
-		total = len(feature)
 		mean = [i/total for i in x]
 		var = [x2[i]/total - pow(mean[i], 2) for i in range(dim)]
 	
