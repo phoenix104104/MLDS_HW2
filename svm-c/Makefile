@@ -17,7 +17,12 @@ all: svm_empty_learn svm_empty_classify
 .PHONY: clean
 clean: svm_light_clean svm_struct_clean
 	rm -f *.o *.tcov *.d core gmon.out *.stackdump 
-
+.PHONY: run
+run: svm_light_clean svm_struct_clean
+	python preprocess.py
+	./svm_empty_learn -c 1 ../../feature/train.fbank ./model
+	./svm_empty_classify ../../feature/test.fbank ./model ./my_output
+	python postprocess.py -i ./my_output -o ./output.kaggle
 #-----------------------#
 #----   SVM-light   ----#
 #-----------------------#
