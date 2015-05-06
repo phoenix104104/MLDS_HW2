@@ -98,7 +98,7 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
 
   FILE* file;
 
-  int buffer_len = 20000;
+  int buffer_len = 30000;
   char* buffer = (char*)malloc(sizeof(char)*buffer_len);
 
   char** line = (char**)malloc(sizeof(char*)*(max_feature_dim+2));

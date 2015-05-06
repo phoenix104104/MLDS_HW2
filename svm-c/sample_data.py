@@ -8,7 +8,7 @@ from util import extract_audio_name
 if __name__ == '__main__':
     
     feature_dir = '../../feature'
-    fv_name = 'fbank'
+    fv_name = 'fbank3_512.norm.bias'
 
 
     feature_filename = os.path.join(feature_dir, 'train.%s' %fv_name)
