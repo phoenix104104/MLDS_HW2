@@ -18,7 +18,6 @@ Directory tree:
     /MLDS/mfcc/             : mfcc feature
     /MLDS/feature/          : extracted feature
     /MLDS/MLDS_HW2/svm-c/   : new c version
-    /MLDS/MLDS_HW2/svm-py/  : python version
 
 Usage:
     make
