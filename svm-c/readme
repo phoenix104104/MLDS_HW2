@@ -6,17 +6,19 @@ Environment:
 Language:
     C
 
-Directory tree: (TODO)
+Directory tree:
     because the path is hard coded in makefile and some python codes, 
     you have to make sure the directory tree is the same to guarantee 
     proper program behavior. 
     
     /MLDS/                  : root folder of all programs and data
+    /MLDS/48_idx_chr.map_b  : mapping file
     /MLDS/label/            : label file of training data
+    /MLDS/fbank/            : fbank feature
+    /MLDS/mfcc/             : mfcc feature
     /MLDS/feature/          : extracted feature
     /MLDS/MLDS_HW2/svm-c/   : new c version
     /MLDS/MLDS_HW2/svm-py/  : python version
-    (not finished)
 
 Usage:
     make
