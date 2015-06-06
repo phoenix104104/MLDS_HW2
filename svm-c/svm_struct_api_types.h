@@ -67,6 +67,7 @@ typedef struct label {
   int*      y;
   char*     filename;
   int       frame_num;
+  int**	    y_n_best;
 } LABEL;
 
 typedef struct structmodel {

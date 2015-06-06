@@ -21,11 +21,16 @@
 #include <string.h>
 #include "svm_struct/svm_struct_common.h"
 #include "svm_struct_api.h"
+#include "entry_heap.h"
 
 // memory block used in Viterbi ( classify_example(), find_most_violated )
 static double* viterbi_val_block = NULL;
 static int* viterbi_prev_block = NULL;
 static int viterbi_block_size = 0;
+
+static const int n_best_num = 1;
+static Entry* entry_block = NULL;
+static int entry_block_size = 0;
 
 int strsplit(char** array, char* str, const char* del) {
   int len = 0;
@@ -172,6 +177,8 @@ SAMPLE      read_struct_examples(char *input_filename, STRUCT_LEARN_PARM *sparm)
       examples[i].x.frame_num = frame_num_list[i];
       examples[i].y.frame_num = frame_num_list[i];
 
+      examples[i].y.y_n_best = NULL;
+
       j = 0; // counter of frame
     }
     
@@ -299,24 +306,24 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
 
   /* insert your code for computing the predicted label y here */
   // TODO
+  
   ybar.y = my_malloc(sizeof(int) * x.frame_num);
   ybar.filename = x.filename;
   ybar.frame_num = x.frame_num;
+  ybar.y_n_best = my_malloc(sizeof(int*) * n_best_num);
 
-  if(viterbi_val_block == NULL) {
-    viterbi_block_size = 1000 * sparm->label_num;
-    viterbi_val_block = my_malloc(sizeof(double) * viterbi_block_size);
-    viterbi_prev_block = my_malloc(sizeof(int) * viterbi_block_size);
+
+  if(entry_block == NULL) {
+    entry_block_size = 1000 * sparm->label_num;
+    entry_block = my_malloc(sizeof(Entry) * n_best_num * entry_block_size);
   }
 
-  if(viterbi_block_size < (x.frame_num * sparm->label_num)) {
-    free(viterbi_val_block);
-    free(viterbi_prev_block);
-    while(viterbi_block_size < (x.frame_num * sparm->label_num)) {
-      viterbi_block_size = viterbi_block_size * 2;
+  if(entry_block_size < (x.frame_num * sparm->label_num)) {
+    free(entry_block);
+    while(entry_block_size < (x.frame_num * sparm->label_num)) {
+      entry_block_size = entry_block_size * 2;
     }
-    viterbi_val_block = my_malloc(sizeof(double) * viterbi_block_size);
-    viterbi_prev_block = my_malloc(sizeof(int) * viterbi_block_size); 
+    entry_block = my_malloc(sizeof(Entry) * n_best_num * entry_block_size);
   }
 
   int w_offset = 1;
@@ -326,14 +333,74 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
   int i = 0,j = 0,m = 0;
 
   for(i = 0; i < sparm->label_num; i++) {
-    viterbi_val_block[i] = 0;
-    viterbi_prev_block[i] = -1;  // no prev for first frame
+    Entry e;
+    e.value = 0;
+    e.prev = 0;
+    e.prev_rank = 0;
     int offset = i * sparm->feature_dim + w_offset;
     for(j = 0; j < sparm->feature_dim; j++) {
-      viterbi_val_block[i] += sm->w[offset+j] * x.x[0][j];
+      e.value += sm->w[offset+j] * x.x[0][j];
     }
+    entry_block[i * n_best_num] = e;
+    e.value = e.prev = e.prev_rank = -1;
+    entry_block[i * n_best_num + 1] = e;
   }
 
+  // forward
+  heap_init(sparm->label_num);
+  for(m = 1; m < x.frame_num; m++) {
+    int entry_prev_offset = (m - 1) * n_best_num * sparm->label_num;
+    int entry_offset = m * n_best_num * sparm->label_num;
+    for(j = 0; j < sparm->label_num; j++) {
+      heap_clear();
+      for(i = 0; i < sparm->label_num; i++) {
+        // from i to j
+        Entry e;
+        e.value = entry_block[entry_prev_offset + i * n_best_num].value;
+        e.value += sm->w[w_trans_offset + i * sparm->label_num + j];
+        e.prev = i;
+        e.prev_rank = 0;
+        heap_insert(e);
+      }
+      int best_count = 0;
+      while(best_count < n_best_num) {
+        if(heap_size() == 0) {
+          break;
+        }
+        Entry e = heap_head();
+        heap_pop();
+        entry_block[entry_offset + j * n_best_num + best_count] = e;
+        best_count++;
+        if(e.prev_rank < (n_best_num - 1)) {
+          int next_entry = entry_prev_offset + e.prev * n_best_num + e.prev_rank + 1;
+          if(entry_block[next_entry].prev != -1) {
+            // valid entry
+            Entry e2;
+            e2.value = entry_block[next_entry].value;
+            e2.value += sm->w[w_trans_offset + i * sparm->label_num + j];
+            e2.prev = e.prev;
+            e2.prev_rank = e.prev_rank + 1;
+            heap_insert(e2);
+          }
+        }
+      }
+      if(best_count < n_best_num) {
+        Entry e;
+        e.value = e.prev = e.prev_rank = -1;
+        entry_block[entry_offset + j * n_best_num + best_count] = e;
+      }
+      double add = 0;
+      int offset = j * sparm->feature_dim + w_offset;
+      for(i = 0; i < sparm->feature_dim; i++) {
+        add += sm->w[offset+i] * x.x[m][i];
+      }
+      for(i = 0; i < best_count; i++) { 
+        int entry_idx = entry_offset + j * n_best_num + i;
+        entry_block[entry_idx].value += add;
+      }
+    }
+  }
+/*
   // forward
   for(m = 1; m < x.frame_num; m++) {
     int viterbi_prev_offset = (m - 1) * sparm->label_num;
@@ -360,7 +427,60 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
       viterbi_prev_block[viterbi_offset+j] = maxIdx;
     }
   }
+*/
 
+  // backtrace
+  heap_clear();
+  int entry_prev_offset = (x.frame_num - 1) * n_best_num * sparm->label_num;
+  for(i = 0; i < sparm->label_num; i++) {
+    Entry e;
+    e.value = entry_block[entry_prev_offset + i * n_best_num].value;
+    e.prev = i;
+    e.prev_rank = 0;
+    heap_insert(e);
+  }
+  int best_count = 0;
+  while(best_count < n_best_num) {
+    if(heap_size() == 0) {
+      break;
+    }
+    Entry e = heap_head();
+    heap_pop();
+
+    int* temp = my_malloc(sizeof(int) * x.frame_num);
+    // TODO: 
+    // backtrace(e);
+    int label = e.prev;
+    int rank = e.prev_rank;
+    for(i = x.frame_num - 1; i >= 0; i--) {
+      temp[i] = label;
+      int idx = (i - 1) * n_best_num * sparm->label_num + label * n_best_num + rank;
+      Entry e2 = entry_block[idx];
+      label = e2.prev;
+      rank = e2.prev_rank;
+    }
+
+    ybar.y_n_best[best_count] = temp;
+    best_count++;
+
+    if(e.prev_rank < (n_best_num - 1)) {
+      int next_entry = entry_prev_offset + e.prev * n_best_num + e.prev_rank + 1;
+      if(entry_block[next_entry].prev != -1) {
+        // valid entry
+        Entry e2;
+        e2 = entry_block[next_entry];
+        e2.prev = e.prev;
+        e2.prev_rank = e.prev_rank + 1;
+        heap_insert(e2);
+      }
+    }
+  }
+
+  if(best_count < n_best_num) {
+    ybar.y_n_best[best_count] = NULL;
+  }
+
+/*
   // backtrace
   int viterbi_offset = (x.frame_num - 1) * sparm->label_num;
   int maxIdx = 0;
@@ -376,8 +496,15 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
     ybar.y[i] = maxIdx;
     maxIdx = viterbi_prev_block[i * sparm->label_num + maxIdx];
   }
+*/
   //check_y(ybar, sparm->label_num);
+
+  for(i = 0; i < x.frame_num; i++) {
+    ybar.y[i] = ybar.y_n_best[0][i];
+  }
+
   return(ybar);
+  
 }
 
 LABEL       find_most_violated_constraint_slackrescaling(PATTERN x, LABEL y, 
@@ -445,6 +572,7 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y,
   ybar.y = my_malloc(sizeof(int) * x.frame_num);
   ybar.filename = x.filename;
   ybar.frame_num = x.frame_num;
+  ybar.y_n_best = NULL;
 
   if(viterbi_val_block == NULL) {
     viterbi_block_size = 1000 * sparm->label_num;
