@@ -377,7 +377,7 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
             // valid entry
             Entry e2;
             e2.value = entry_block[next_entry].value;
-            e2.value += sm->w[w_trans_offset + i * sparm->label_num + j];
+            e2.value += sm->w[w_trans_offset + e.prev * sparm->label_num + j];
             e2.prev = e.prev;
             e2.prev_rank = e.prev_rank + 1;
             heap_insert(e2);
@@ -454,7 +454,7 @@ LABEL       classify_struct_example(PATTERN x, STRUCTMODEL *sm,
     int rank = e.prev_rank;
     for(i = x.frame_num - 1; i >= 0; i--) {
       temp[i] = label;
-      int idx = (i - 1) * n_best_num * sparm->label_num + label * n_best_num + rank;
+      int idx = i * n_best_num * sparm->label_num + label * n_best_num + rank;
       Entry e2 = entry_block[idx];
       label = e2.prev;
       rank = e2.prev_rank;
