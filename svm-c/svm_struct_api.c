@@ -839,12 +839,21 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
 void        write_label(FILE *fp, LABEL y)
 {
   /* Writes label y to file handle fp. */
-  int i;
-  fprintf(fp, "%s", y.filename);
-  for(i=0 ; i<y.frame_num ; i++) {
-    fprintf(fp, " %d", y.y[i]);
+  int j;
+  for(j=0; j<n_best_num;j++) {
+    if(y.y_n_best[j] == NULL) {
+      break;
+    }
+    int i, prev = -1;
+    fprintf(fp, "%s", y.filename);
+    for(i=0 ; i < y.frame_num ; i++) {
+      if(y.y_n_best[j][i] != prev) {
+        fprintf(fp, " %d", y.y_n_best[j][i]);
+        prev = y.y_n_best[j][i];
+      }
+    }
+    fprintf(fp, "\n");
   }
-  fprintf(fp, "\n");
 } 
 
 void        free_pattern(PATTERN pattern) {
