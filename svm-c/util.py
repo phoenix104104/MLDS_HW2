@@ -1,4 +1,5 @@
 import csv
+import numpy as np
 
 sil = 'L'
  
@@ -57,3 +58,26 @@ def load_csv(input_filename):
     
     return data
 
+def load_hw1_feature(filename):
+
+    print "Load %s" %filename
+    X = np.loadtxt(filename, dtype='float')
+    return X
+
+def save_hw2_feature(filename, feature, frame, label=""):
+    
+    N = len(frame)
+    with open(filename, 'w') as f:
+        print "Save %s" %filename
+        if( label != "" ):
+            # training file
+            for i in range(N):
+                f.write("%s %s " %(frame[i], label[i]))
+                f.write(" ".join("%.7f" %x for x in feature[i]))
+                f.write("\n")
+        else:
+            # testing file
+            for i in range(N):
+                f.write("%s 0 " %frame[i])
+                f.write(" ".join("%.7f" %x for x in feature[i]))
+                f.write("\n")

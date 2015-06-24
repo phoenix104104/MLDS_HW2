@@ -9,7 +9,7 @@ if __name__ == "__main__":
      
     parser = argparse.ArgumentParser()
     parser.add_argument('-i' , dest='predict_filename'  , required=True, help='Predicted label file path')
-    parser.add_argument('-o' , dest='output_filename'   , required=True, help='Output filename')
+    parser.add_argument('-o' , dest='output_filename'                  , help='Output filename')
     opts = parser.parse_args(sys.argv[1:])  
     
     
@@ -19,8 +19,10 @@ if __name__ == "__main__":
     #predict_filename = '../../feature/train.fbank.label'
     #output_filename = 'train_output.csv'
     predict_filename = opts.predict_filename
-    output_filename = opts.output_filename
-
+    if( opts.output_filename ):
+        output_filename = opts.output_filename
+    else:
+        output_filename = predict_filename + '.csv'
     
     utterance_all = []        
     with open(predict_filename, 'r') as f:
@@ -30,7 +32,7 @@ if __name__ == "__main__":
             name = id_list[0]
             id_list = id_list[1:]
             utterance = UTTERANCE()
-            utterance.name = name;
+            utterance.name = name
             utterance.phone_list = [dict_idx48_to_chr[int(id)] for id in id_list ]
             utterance_all.append(utterance)
 
