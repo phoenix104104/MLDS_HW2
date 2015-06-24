@@ -28,7 +28,7 @@ static double* viterbi_val_block = NULL;
 static int* viterbi_prev_block = NULL;
 static int viterbi_block_size = 0;
 
-static const int n_best_num = 1;
+static const int n_best_num = 10;
 static Entry* entry_block = NULL;
 static int entry_block_size = 0;
 
