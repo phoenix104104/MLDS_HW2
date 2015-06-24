@@ -37,10 +37,16 @@ if __name__ == "__main__":
             utterance_all.append(utterance)
 
     data = [] 
+    current_name = ''
+    seq_dict = dict()
     for utterance in utterance_all:
         utterance.trimming()
-        data.append([utterance.name, utterance.phone_sequence])
-        
+        if(utterance.name != current_name):
+            current_name = utterance.name
+            seq_dict.clear()
+        if(seq_dict.get(utterance.phone_sequence, 0) == 0):
+            data.append([utterance.name, utterance.phone_sequence])
+            seq_dict[utterance.phone_sequence] = 1
     
     header = ["id", "phone_sequence"]
     save_csv(output_filename, header, data)  
