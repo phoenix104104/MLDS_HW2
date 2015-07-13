@@ -8,11 +8,16 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-i' , dest='input_filename'  , required=True, help='Input file path')
-    parser.add_argument('-o' , dest='output_filename' , required=True, help='Output filename')
+    parser.add_argument('-o' , dest='output_filename' , help='Output filename')
     opts = parser.parse_args(sys.argv[1:])
 
     input_filename = opts.input_filename
-    output_filename = opts.output_filename
+    if( opts.output_filename ):
+        output_filename = opts.output_filename
+    else:
+        basename = os.path.basename(input_filename)
+        output_filename = os.path.join('../../pred', basename)
+
 
     data_all = load_csv(input_filename)
     
